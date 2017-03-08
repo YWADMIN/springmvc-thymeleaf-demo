@@ -1,0 +1,726 @@
+// 构建脚本依赖的外部类库
+buildscript {/*{{{*/
+  repositories {
+    maven {
+        url "http://maven.aliyun.com/nexus/content/groups/public/"
+    }
+	mavenCentral()
+  }
+
+  dependencies {
+    classpath 'org.akhikhl.gretty:gretty:1.4.0'
+  }
+}/*}}}*/
+
+apply plugin: 'java'
+apply plugin: 'groovy'
+apply plugin: 'idea'
+apply plugin: 'war'
+apply plugin: 'org.akhikhl.gretty'
+
+// -----------------------------------------------------------------------
+// -                           global settings                           -
+// -----------------------------------------------------------------------
+// 编译设置/*{{{*/
+// 设置 java 版本编译兼容
+sourceCompatibility = 1.8
+/**
+ * 指定 groovy 编译器包含 java 和 groovy 源目录
+ */
+sourceSets.main.java.srcDirs = [] // 先移除 java source set 的源目录
+sourceSets.main.groovy.srcDirs = ['src/main/java', 'src/main/groovy']
+// 下面这样就可以让 groovy 写的对 java code 的单元测试能放在 test/java 下了
+sourceSets.test.java.srcDirs = [] // 先移除 java source set 的源目录
+sourceSets.test.groovy.srcDirs = ['src/test/java', 'src/test/groovy']
+/*}}}*/
+
+// web lib dir
+project.ext.webLibDir = "${System.properties['user.home']}/workspace/web-lib"
+// local lib dir
+project.ext.localLibDir = "${System.properties['user.home']}/workspace/local-lib"
+
+ext {/*{{{*/
+    // moduleName: gretty 中测试使用这个作为 contextPath,
+    // 实际发布后用 war 的 archiveName, 默认项目名
+	moduleName = 'demo'
+
+    // packagename
+	packageName = "cn.codergege.$moduleName"
+	packageDir = "cn/codergege/$moduleName"
+	submods = ['config', 'handler', 'conversion', 'dao', 'domain']
+
+	mainJava = 'src/main/java'
+	mainGroovy = 'src/main/groovy'
+	mainResources = 'src/main/resources'
+	testJava = 'src/test/java'
+	testGroovy = 'src/test/groovy'
+	testResources = 'src/test/resources'
+
+	baseDirs = [mainJava, mainGroovy, testJava, testGroovy]
+
+	// js, css 等静态资源位置
+	assets = "$webAppDirName/assets"
+	// jqeury 将被下载到 ext 下
+	subsets = ['ext', 'js', 'css', 'img']
+}/*}}}*/
+
+project.ext.sqlFiles = [file("${mainResources}/sql/schema.sql"), 
+	file("${mainResources}/sql/test-data.sql")]
+
+war {/*{{{*/
+	// 默认就是这个
+	baseName = project.archivesBaseName
+	// 显示指定, 不加 版本号
+	archiveName = "${baseName}.${extension}"
+}/*}}}*/
+
+// 配置 gretty/*{{{*/
+// 不影响实际发布
+gretty {
+  port = 8888
+  contextPath = moduleName
+  // ... many more properties
+}/*}}}*/
+
+// -----------------------------------------------------------------------
+// -                            Dependencies                             -
+// -----------------------------------------------------------------------
+
+repositories {/*{{{*/
+	maven {
+		url "http://maven.aliyun.com/nexus/content/groups/public/"
+	}
+	mavenCentral()
+
+	// 自定义 ivy 仓库
+	ivy {
+		name 'JQuery'
+		url 'https://code.jquery.com'
+		layout 'pattern', {
+			artifact '[module]-[revision](.[classifier]).[ext]'
+		}
+	}
+}/*}}}*/
+
+configurations {/*{{{*/
+	jquery
+}/*}}}*/
+
+// define dependency version//{{{
+
+// web part/*{{{*/
+ext {
+	jqueryVersion = '3.1.1'
+}/*}}}*/
+
+ext {
+	groovyVersion = '2.4.7'
+
+	slf4jVersion = '1.7.21'
+	logbackVersion = '1.1.7'
+
+	mysqlConnectorVersion = '6.0.5'
+	dbcpVersion = '2.1.1'
+
+	springVersion = '4.3.6.RELEASE'
+
+	thymeleafVersion = '3.0.3.RELEASE'
+
+	hibernateValidatorVersion = '5.3.3.Final'
+
+	jacksonVersion = '2.8.5'
+
+	jstlVersion = '1.2'
+	servletVersion = '3.1.0'
+	jspVersion = '2.2'
+
+	// poiVersion = '3.15'
+
+	junitVersion = '4.12'
+	cglibVersion = '3.2.4'
+	spockVersion = '1.1-groovy-2.4-rc-3'
+	// mokitoVersion = '2.7.12'
+	// hamcrestVersion = '1.3'
+}//}}}
+
+dependencies {//{{{
+
+	// web part/*{{{*/
+	jquery group: 'jquery', name: 'jquery', version: jqueryVersion, 
+		classifier: 'min', ext: 'js'
+	/*}}}*/
+
+    // - 本地依赖, ojdbc6.jar
+    compile fileTree(dir:'lib', include:['*.jar'])
+
+	// groovy
+	compile "org.codehaus.groovy:groovy-all:$groovyVersion"
+
+    // - 日志
+    compile group: 'org.slf4j', name: 'slf4j-api', version: slf4jVersion
+    compile group: 'ch.qos.logback', name: 'logback-classic', version: logbackVersion
+	compile group: 'ch.qos.logback', name: 'logback-core', version: logbackVersion
+	compile group: 'ch.qos.logback', name: 'logback-access', version: logbackVersion
+
+    // - 数据库
+	compile group: 'mysql', name: 'mysql-connector-java', version: mysqlConnectorVersion
+	compile group: 'org.apache.commons', name: 'commons-dbcp2', version: dbcpVersion
+
+    // - spring
+    compile group: 'org.springframework', name: 'spring-core', version: springVersion
+    compile group: 'org.springframework', name: 'spring-beans', version: springVersion
+    compile group: 'org.springframework', name: 'spring-context', version: springVersion
+    compile group: 'org.springframework', name: 'spring-webmvc', version: springVersion
+	compile group: 'org.springframework', name: 'spring-jdbc', version: springVersion
+
+	// thymeleaf 视图
+	compile group: 'org.thymeleaf', name: 'thymeleaf-spring4', version: thymeleafVersion
+
+	// -- 验证框架
+	compile group: 'org.hibernate', name: 'hibernate-validator', version: hibernateValidatorVersion
+
+	// -- json 支持
+	compile group: 'com.fasterxml.jackson.core', name: 'jackson-databind', version: jacksonVersion
+	compile group: 'com.fasterxml.jackson.core', name: 'jackson-core', version: jacksonVersion
+	compile group: 'com.fasterxml.jackson.core', name: 'jackson-annotations', version: jacksonVersion
+
+    providedCompile group: 'javax.servlet.jsp.jstl', name: 'jstl-api', version: jstlVersion
+    providedCompile group: 'javax.servlet', name: 'javax.servlet-api', version: servletVersion
+    providedCompile group: 'javax.servlet.jsp', name: 'jsp-api', version: jspVersion
+
+    // - poi
+    // compile group: 'org.apache.poi', name: 'poi', version: poiVersion
+    // compile group: 'org.apache.poi', name: 'poi-ooxml', version: poiVersion
+
+    // 测试
+    testCompile group: 'org.springframework', name: 'spring-test', version: springVersion
+    testCompile "junit:junit:$junitVersion"
+	testCompile group: 'cglib', name: 'cglib-nodep', version: cglibVersion
+	testCompile group: 'org.spockframework', name: 'spock-core', version: spockVersion
+	testCompile group: 'org.spockframework', name: 'spock-spring', version: spockVersion
+	// testCompile group: 'org.mockito', name: 'mockito-core', version: mokitoVersion
+	// testCompile group: 'org.hamcrest', name: 'hamcrest-all', version: hamcrestVersion
+}//}}}
+
+// -----------------------------------------------------------------------
+// -                                Setup                                -
+// -----------------------------------------------------------------------
+// setup/*{{{*/
+
+def convertProjectName() {/*{{{*/
+	def projectNameList = project.name.tokenize('-')
+	projectNameList.collect {
+		it.replaceFirst(it[0], it[0].toUpperCase())
+	}.join()
+}/*}}}*/
+
+task setup {/*{{{*/
+	group = 'setup'
+	description = 'setup 项目结构'
+
+	doLast {
+		logger.quiet "开始创建项目结构 ..."
+		project.sourceSets*.allSource.srcDirTrees.flatten().dir.each {
+			logger.quiet "创建 $it ..."
+			mkdir it
+		}
+		
+		logger.quiet "开始创建包目录 $packageName"
+		
+		submods.each { submod ->
+			baseDirs.each { 
+				logger.quiet "$it/$packageDir/$submod"
+				mkdir "$it/$packageDir/$submod"
+			}
+		}
+
+		logger.quiet "开始创建 webapp 目录: $webAppDirName"
+		mkdir webAppDir
+		mkdir "$webAppDirName/WEB-INF"
+
+		logger.quiet "开始创建 assets 目录"
+		subsets.each {
+			mkdir "$assets/$it"
+		}
+		
+	}
+}/*}}}*/
+
+task fetchWebLib(type: Copy) {/*{{{*/
+	group = 'setup'
+	description = '获取 web 前端开发库'
+
+	from configurations.jquery
+	// 如果目录不存在, 则会自动创建
+	into "$assets/ext"
+}/*}}}*/
+
+task copyLocalLib(type: Copy) {/*{{{*/
+	group = 'setup'
+	description = '复制 ojdbc6.jar 等本地 jar 文件到 lib'
+
+	from localLibDir
+	into 'lib'
+}/*}}}*/
+
+task copyCss(type: Copy) {/*{{{*/
+	group = 'setup'
+	description = '复制 css'
+	
+	from "$webLibDir/css" 
+	include '*.css'
+	
+	into "$assets/css"
+}/*}}}*/
+
+task copyJs(type: Copy) {/*{{{*/
+	group = 'setup'
+	description = '复制 js'
+	
+	from "$webLibDir/js" 
+	include '*.js'
+	
+	into "$assets/js"
+}/*}}}*/
+
+task createWebAppInit {/*{{{*/
+	group = 'setup'
+	description = '创建 webAppInitializer.'
+
+	doLast {
+		def appName = convertProjectName()
+
+		def webAppInit = "$mainJava/$packageDir/config/${appName}WebAppInitializer.java"
+		def webConfig = "$mainJava/$packageDir/config/WebConfig.java"
+		def rootConfig = "$mainJava/$packageDir/config/RootConfig.java"
+
+		/*{{{*/
+		if(file(webAppInit).exists()) file(webAppInit).text = ''
+		file(webAppInit).withOutputStream { stream -> 
+			stream << """\
+package ${packageName}.config;
+
+			"""
+		}
+		/*}}}*/
+
+		/*{{{*/
+		if(file(webConfig).exists()) file(webConfig).text = ''
+		file(webConfig).withOutputStream { stream -> 
+			stream << """\
+package ${packageName}.config;
+
+			"""
+		}
+		/*}}}*/
+
+		/*{{{*/
+		if(file(rootConfig).exists()) file(rootConfig).text = ''
+		file(rootConfig).withOutputStream { stream -> 
+			stream << """\
+package ${packageName}.config;
+
+			"""
+		}
+		/*}}}*/
+
+	}
+}/*}}}*/
+
+task createVersionFile() {/*{{{*/
+	group = 'setup'
+	description = '生成 version.properties'
+
+	doLast {
+		if(!file('version.properties').exists()) {
+			file('version.properties').withOutputStream { stream -> 
+				stream << """/
+major=0
+minor=1
+release=false
+			"""
+			}
+		}
+	}
+}/*}}}*/
+
+task createLogbackConfig {/*{{{*/
+	group = 'setup'
+	description = '创建 logback.groovy'
+
+	doLast {
+		def logbackConfig = "$mainResources/logback.groovy"
+		/*{{{*/
+		if(file(logbackConfig).exists()) file(logbackConfig).text = ''
+		file(logbackConfig).withOutputStream { stream -> 
+			stream << """\
+import ch.qos.logback.classic.encoder.PatternLayoutEncoder
+import ch.qos.logback.classic.filter.LevelFilter
+import ch.qos.logback.core.ConsoleAppender
+import ch.qos.logback.core.rolling.RollingFileAppender
+import ch.qos.logback.core.rolling.TimeBasedRollingPolicy
+import ch.qos.logback.core.util.FileSize
+
+import static ch.qos.logback.classic.Level.DEBUG
+import static ch.qos.logback.classic.Level.ERROR
+import static ch.qos.logback.classic.Level.INFO
+import static ch.qos.logback.core.spi.FilterReply.ACCEPT
+import static ch.qos.logback.core.spi.FilterReply.DENY
+
+scan("30 seconds")
+appender("STDOUT", ConsoleAppender) {
+  encoder(PatternLayoutEncoder) {
+    pattern = "%d{yyyy-MM-dd HH:mm:ss} [%level] - %m%n"
+  }
+}
+appender("TIME-ERROR-OUT", RollingFileAppender) {
+  file = "logs/error.log"
+  encoder(PatternLayoutEncoder) {
+    pattern = "%d{yyyy-MM-dd HH:mm:ss} [%class:%line] - %m%n"
+  }
+  filter(LevelFilter) {
+    level = ERROR
+    onMatch = ACCEPT
+    onMismatch = DENY
+  }
+  rollingPolicy(TimeBasedRollingPolicy) {
+    fileNamePattern = "logs/error.%d{yyyy-MM-dd}.log.zip"
+    maxHistory = 30
+    totalSizeCap = new FileSize(1 * FileSize.GB_COEFFICIENT) // 1GB
+  }
+}
+appender("TIME-DEBUG-OUT", RollingFileAppender) {
+  file = "logs/debug.log"
+  encoder(PatternLayoutEncoder) {
+    pattern = "%d{yyyy-MM-dd HH:mm:ss} [%class:%line] - %m%n"
+  }
+  filter(LevelFilter) {
+    level = DEBUG
+    onMatch = ACCEPT
+    onMismatch = DENY
+  }
+  rollingPolicy(TimeBasedRollingPolicy) {
+    fileNamePattern = "logs/debug.%d{yyyy-MM-dd}.log.zip"
+    maxHistory = 30
+    totalSizeCap = new FileSize(1 * FileSize.GB_COEFFICIENT) // 1GB
+  }
+}
+appender("TIME-INFO-OUT", RollingFileAppender) {
+  file = "logs/info.log"
+  encoder(PatternLayoutEncoder) {
+    pattern = "%d{yyyy-MM-dd HH:mm:ss} [%class:%line] - %m%n"
+  }
+  filter(LevelFilter) {
+    level = INFO
+    onMatch = ACCEPT
+    onMismatch = DENY
+  }
+  rollingPolicy(TimeBasedRollingPolicy) {
+    fileNamePattern = "logs/info.%d{yyyy-MM-dd}.log.zip"
+    maxHistory = 30
+    totalSizeCap = new FileSize(1 * FileSize.GB_COEFFICIENT) // 1GB
+  }
+}
+logger("org.apache.ibatis", DEBUG, ["STDOUT"])
+logger("java.sql", DEBUG, ["STDOUT"])
+root(DEBUG, ["STDOUT", "TIME-ERROR-OUT", "TIME-DEBUG-OUT", "TIME-INFO-OUT"])
+			
+			"""
+		}
+		/*}}}*/
+	}
+}/*}}}*/
+
+task createApplicationProperties {/*{{{*/
+	group = 'setup'
+	description = '创建 application.properties'
+
+	doLast {
+		def applicationProperties = "$mainResources/application.properties"
+		/*{{{*/
+		if(file(applicationProperties).exists()) file(applicationProperties).text = ''
+		file(applicationProperties).withOutputStream { stream -> 
+			stream << """\
+# 应用配置
+author=codergege
+			"""
+		}
+		/*}}}*/
+	}
+}/*}}}*/
+
+task createDemoControllerAndTester {/*{{{*/
+	group = 'setup'
+	description = '创建用于演示的 HomeController.java, HomeControllerTest.java'
+
+	doLast {
+		def homeController = "$mainJava/$packageDir/handler/HomeController.java"
+		def homeControllerTest = "$testJava/$packageDir/handler/HomeControllerTest.java"
+		// todo: index.html thymeleaf 模板
+
+		/*{{{*/
+		if(file(homeController).exists()) file(homeController).text = ''
+		file(homeController).withOutputStream { stream -> 
+			stream << """\
+package ${packageName}.handler;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+
+import java.util.Date;
+import java.util.Map;
+
+@Controller
+public class HomeController {
+    private final Logger log = LoggerFactory.getLogger(HomeController.class);
+
+    @RequestMapping(value = { "/", "/index", "/home" }, method = RequestMethod.GET)
+    public String home(Map map) {
+        Date date = new Date();
+        map.put("date", date);
+        System.out.println("HomeController runs, date: " + date);
+        log.info("HomeController runs, date: " + date);
+        return "forward:/index.html";
+    }
+}
+			"""
+		}
+		/*}}}*/
+
+		/*{{{*/
+		if(file(homeControllerTest).exists()) file(homeControllerTest).text = ''
+		file(homeControllerTest).withOutputStream { stream -> 
+			stream << """\
+package ${packageName}.handler;
+
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.Test;
+import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.MvcResult;
+import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
+import org.springframework.test.web.servlet.result.MockMvcResultHandlers;
+import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
+import org.springframework.test.web.servlet.setup.MockMvcBuilders;
+
+public class HomeControllerTest {
+    private HomeController controller;
+    private MockMvc mockMvc;
+
+    @Before
+    public void setup() {
+        controller = new HomeController();
+        mockMvc = MockMvcBuilders.standaloneSetup(controller).build();
+    }
+    @Test
+    public void testHome() throws Exception {
+
+        MvcResult result = mockMvc.perform(MockMvcRequestBuilders.get("/"))
+                .andExpect(MockMvcResultMatchers.model().attributeExists("date"))
+                .andExpect(MockMvcResultMatchers.view().name("forward:/index.html"))
+                .andExpect(MockMvcResultMatchers.status().isOk())
+                .andDo(MockMvcResultHandlers.print()) // 输出 MvcResult 对象到控制台
+                .andReturn(); // 返回 MvcResult 对象
+
+        // 得到的 result 可以自定义断言
+        Assert.assertNotNull(result.getModelAndView());
+    }
+}
+
+			"""
+		}
+		/*}}}*/
+
+	}
+}/*}}}*/
+
+setup.finalizedBy fetchWebLib
+setup.finalizedBy copyLocalLib
+setup.finalizedBy copyCss
+setup.finalizedBy copyJs
+setup.finalizedBy createWebAppInit
+setup.finalizedBy createVersionFile
+setup.finalizedBy createLogbackConfig
+setup.finalizedBy createApplicationProperties
+setup.finalizedBy createDemoControllerAndTester
+/*}}}*/
+
+task initDb {
+	doLast {
+		sqlFiles.each { sqlFile ->
+			project.exec {
+					executable 'mysql'
+					args '-h127.0.0.1', '-uroot', '-proot', '-e', "source ${sqlFile.canonicalFile}"
+			}
+		}
+	}
+}
+
+// -----------------------------------------------------------------------
+// -                                Test                                 -
+// -----------------------------------------------------------------------
+
+test {/*{{{*/
+	testLogging {
+		// 打开标准输出和错误流的日志
+		showStandardStreams = true
+		// 在测试执行期间打印特定的测试事件
+		events 'started', 'passed', 'skipped', 'failed'
+	}
+}
+/*}}}*/
+
+// -----------------------------------------------------------------------
+// -                               Version                               -
+// -----------------------------------------------------------------------
+// version/*{{{*/
+project.ext.versionFile = file('version.properties')
+// 项目版本号
+// task 配置
+task loadVersion {/*{{{*/
+	group = 'versioning'
+	description = '加载 version 配置文件, 确定 project.version'
+
+	if(versionFile.exists()) project.version = readVersion()
+}/*}}}*/
+
+Version readVersion() {/*{{{*/
+	logger.quiet 'Reading the version file ...'
+
+	if(!versionFile.exists()) {
+		throw new GradleException("需要的 version 配置文件不存在: $versionFile.canonicalPath")
+	}
+
+	Properties versionProps = new Properties()
+
+	// 读取 version file
+	versionFile.withInputStream { stream -> 
+		versionProps.load(stream)
+	}
+
+	// 返回 ProjectVersion 实例
+	new Version(major: versionProps.major.toInteger(), 
+		minor: versionProps.minor.toInteger(), release: versionProps.release.toBoolean())
+}/*}}}*/
+
+def increaseVersion(mn) {/*{{{*/
+	project.version[mn]++
+	ant.propertyfile(file: versionFile) {
+		entry(key: mn, type:'int', operation: '=', 
+			value: project.version[mn].toString())
+	}
+}/*}}}*/
+
+def changeVersion(ver) {/*{{{*/
+	project.version.release = ver
+	ant.propertyfile(file: versionFile) {
+		entry(key: 'release', type:'string', operation: '=', 
+			value: project.version.release.toString())
+	}
+}/*}}}*/
+
+task makeDev {/*{{{*/
+	group = 'versioning'
+	description = 'Dev 版本'
+
+	doLast {
+		changeVersion(false)
+	}
+}/*}}}*/
+
+task makeRelease {/*{{{*/
+	group = 'versioning'
+	description = 'Release 版本'
+
+	doLast {
+		changeVersion(true)
+	}
+}/*}}}*/
+
+task increaseMajor {/*{{{*/
+	group = 'versioning'
+	description = '增长主版本号'
+
+	doLast {
+		increaseVersion('major')
+	}
+}/*}}}*/
+
+task increaseMinor {/*{{{*/
+	group = 'versioning'
+	description = '增长次版本号'
+
+	doLast {
+		increaseVersion('minor')
+	}
+}/*}}}*/
+
+task printVersion {/*{{{*/
+	group = 'versioning'
+	description = '打印项目版本'
+
+	doLast {
+		logger.quiet "项目版本: $version"
+	}
+	
+}/*}}}*/
+
+class Version {/*{{{*/
+	Integer major
+	Integer minor
+	Boolean release = false
+
+	@Override
+	String toString() {
+		"$major.$minor${release? '-RELEASE': '-SNAPSHOT'}"
+	}
+}/*}}}*/
+/*}}}*/
+
+// -----------------------------------------------------------------------
+// -                               Release                               -
+// -----------------------------------------------------------------------
+
+task createDistZip(type: Zip, dependsOn: makeRelease) {/*{{{*/
+	from war.outputs.files
+	from(sourceSets*.allSource) {
+		into 'src'
+	}
+	from(rootDir) {
+		include versionFile.name, 'build.gradle'
+	}
+}/*}}}*/
+
+task createDistTar(type: Tar, dependsOn: makeRelease) {/*{{{*/
+	from war.outputs.files
+	from(sourceSets*.allSource) {
+		into 'src'
+	}
+	from(rootDir) {
+		include versionFile.name, 'build.gradle'
+	}
+}/*}}}*/
+
+task backupDist(type: Copy) {/*{{{*/
+	group = 'release'
+	description = '备份发布包'
+
+	from createDistZip.outputs.files, createDistTar.outputs.files
+	into "$buildDir/backup"
+}/*}}}*/
+
+// release/*{{{*/
+task release(dependsOn: backupDist) {
+	group = 'release'
+	description = '发布 release, 并备份'
+
+	doLast {
+		logger.quiet 'Releasing the project ...'
+	}
+}/*}}}*/
+
+release.finalizedBy increaseMinor
+

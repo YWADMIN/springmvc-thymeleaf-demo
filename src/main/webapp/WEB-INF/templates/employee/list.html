@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<!-- /* ::meta, ::title, ::link, ::script */ -->
+<head th:replace="fragment :: common_head(~{::meta},~{::title},~{},~{},~{})">
+    <meta charset="UTF-8">
+    <meta name="viewport"
+          content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Employee List</title>
+</head>
+<body>
+<!-- fragment 是 thymeleaf 视图解析器识别的视图名 -->
+<header id="header" th:replace="fragment :: header"></header>
+
+<div id="content">
+    <h2>Employee List</h2>
+</div>
+
+<footer id="footer" th:replace="fragment :: footer"></footer>
+
+</body>
+</html>

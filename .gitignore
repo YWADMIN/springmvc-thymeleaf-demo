@@ -1,0 +1,21 @@
+# 只忽略 build 目录, 不忽略 build 文件
+build/
+# 忽略 .metadata, .classpath, .project
+.metadata/
+.classpath
+.project
+gradle/
+.recommenders
+RemoteSystemsTempFiles
+bin/
+jquery-easyui-1.5/
+# idea
+out/
+# 忽略所有 calss, jar, zip, 7z, tar, log, part
+*.class
+*.jar
+*.zip
+*.7z
+*.tar
+*.log
+*.part
