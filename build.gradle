@@ -121,6 +121,7 @@ ext {
 
 	mysqlConnectorVersion = '6.0.5'
 	dbcpVersion = '2.1.1'
+	h2Version = '1.4.193'
 
 	springVersion = '4.3.6.RELEASE'
 
@@ -165,6 +166,7 @@ dependencies {//{{{
     // - 数据库
 	compile group: 'mysql', name: 'mysql-connector-java', version: mysqlConnectorVersion
 	compile group: 'org.apache.commons', name: 'commons-dbcp2', version: dbcpVersion
+	compile group: 'com.h2database', name: 'h2', version: h2Version
 
     // - spring
     compile group: 'org.springframework', name: 'spring-core', version: springVersion

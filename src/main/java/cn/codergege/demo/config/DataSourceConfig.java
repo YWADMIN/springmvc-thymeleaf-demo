@@ -3,12 +3,14 @@ package cn.codergege.demo.config;
 import org.apache.commons.dbcp2.BasicDataSource;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.jdbc.datasource.embedded.EmbeddedDatabaseBuilder;
+import org.springframework.jdbc.datasource.embedded.EmbeddedDatabaseType;
 
 import javax.sql.DataSource;
 
 
 @Configuration
-public class DevDataSourceConfig {
+public class DataSourceConfig {
 
     // todo 读取 properties
 
@@ -24,5 +26,14 @@ public class DevDataSourceConfig {
         ds.setMaxTotal(20);
 
         return ds;
+    }
+
+    @Bean
+    public DataSource embeddedDataSource() {
+        return new EmbeddedDatabaseBuilder()
+                .setType(EmbeddedDatabaseType.H2)
+                .addScript("classpath:sql/h2-schema.sql")
+                .addScript("classpath:sql/h2-test-data.sql")
+                .build();
     }
 }

@@ -8,14 +8,13 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import javax.sql.DataSource;
 
 @Configuration
-// 想切换到其他环境就在这里换
-@Import({DevDataSourceConfig.class})
+@Import({DataSourceConfig.class})
 public class DataConfig {
 
     // JdbcTemplate
     @Bean
-    public JdbcTemplate jdbcTemplate(DataSource dataSource) {
-        return new JdbcTemplate(dataSource);
+    public JdbcTemplate jdbcTemplate(DataSource embeddedDataSource) {
+        return new JdbcTemplate(embeddedDataSource);
     }
 
 }
