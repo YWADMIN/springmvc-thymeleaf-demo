@@ -34,6 +34,17 @@
         <p class="row" th:classappend="odd">aaaaa</p>
         <p class="row" th:classappend="${employees[0].id % 2 == 1} ? 'odd'">aaaaa</p>
     </div>
+    <p class="sep">固定值布尔属性</p>
+    <div>
+        <form action="#" th:object="${employees[0]}">
+            男 <input type="radio" name="gender" th:checked="*{gender} == 1">
+            女 <input type="radio" name="gender" th:checked="*{gender} == 0">
+        </form>
+    </div>
+    <p class="sep">任意属性处理器</p>
+    <div>
+        <span th:xxx="${employees[2].name}"></span>
+    </div>
 </div>
 <footer id="footer" th:replace="fragment :: footer"></footer>
 </body>

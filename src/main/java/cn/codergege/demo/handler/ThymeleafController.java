@@ -44,4 +44,11 @@ public class ThymeleafController {
         map.put("employees", employeeDao.getAll());
         return "thymeleaf/demo4";
     }
+
+    @RequestMapping("/demo5")
+    public String demo5(Map<String, Object> map) {
+        map.put("departments", departmentDao.getAll());
+        map.put("employees", employeeDao.getAll());
+        return "thymeleaf/demo5";
+    }
 }

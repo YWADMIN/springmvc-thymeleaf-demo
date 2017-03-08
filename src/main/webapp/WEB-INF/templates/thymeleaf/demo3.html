@@ -60,9 +60,10 @@
 <div>
     <div th:with="isEven = (${employees.size()} % 2 == 0)"></div>
     <!-- 也可以包含在 {} 内, 那么 {} 内的整体就是一个 ognl/spel 表达式, 由 ognl/spel 引擎负责计算 -->
-    <div th:with="isOdd = ${employees.size() % 2 == 1}"></div>
-    <span th:if="${isEven}">是偶数</span>
-    <span th:if="!${isEven}">是奇数</span>
+    <div th:with="isOdd = ${employees.size() % 2 == 1}">
+        <span th:if="${isOdd}">是奇数</span>
+        <span th:if="!${isOdd}">是偶数</span>
+    </div>
 </div>
 
 <p class="sep">比较与相等操作符</p>
